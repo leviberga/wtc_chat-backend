@@ -1,6 +1,6 @@
 package com.wtc.chat_backend.model;
 
-import com.wtc.chat_backend.model.enums.Status;
+import com.wtc.chat_backend.model.enums.CustomerStatus;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -21,7 +21,7 @@ public class Customer {
     private String segmentId;
     private List<String> tags;
     private Double score;
-    private Status status;
+    private CustomerStatus customerStatus;
     private LocalDateTime createdAt = LocalDateTime.now();
 
 

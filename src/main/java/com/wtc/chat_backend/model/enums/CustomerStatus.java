@@ -1,6 +1,6 @@
 package com.wtc.chat_backend.model.enums;
 
-public enum Status {
+public enum CustomerStatus {
     ACTIVE,
     INACTIVE,
     LEAD
