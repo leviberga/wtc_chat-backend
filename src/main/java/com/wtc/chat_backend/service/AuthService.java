@@ -42,8 +42,8 @@ public class AuthService {
         User saved = userRepository.save(user);
 
         String token = jwtUtil.generateToken(saved.getEmail(), String.valueOf(saved.getRole()));
-
-        return AuthResponse.of(token, saved.getId(), saved.getName(),
+        String refreshToken = jwtUtil.generateRefreshToken(saved.getEmail());
+        return AuthResponse.of(token, refreshToken, saved.getId(), saved.getName(),
                 saved.getEmail(), String.valueOf(saved.getRole()));
     }
 
@@ -60,8 +60,8 @@ public class AuthService {
         }
 
         String token = jwtUtil.generateToken(user.getEmail(), String.valueOf(user.getRole()));
-
-        return AuthResponse.of(token, user.getId(), user.getName(),
+        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+        return AuthResponse.of(token, refreshToken, user.getId(), user.getName(),
                 user.getEmail(), String.valueOf(user.getRole()));
     }
 }
