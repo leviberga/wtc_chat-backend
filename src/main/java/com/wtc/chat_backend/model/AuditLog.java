@@ -15,8 +15,8 @@ public class AuditLog {
     private String id;
 
     private String userId;
-    private AuditAction auditAction;
-    private AuditEntity auditEntity;
+    private AuditAction action;
+    private AuditEntity entity;
     private String entityId;
     private String ip;
     private LocalDateTime timestamp = LocalDateTime.now();
