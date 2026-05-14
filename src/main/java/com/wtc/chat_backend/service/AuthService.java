@@ -20,6 +20,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final CustomerService customerService;
+    private final MessageService messageService;
 
     // ─── REGISTRO ────────────────────────────────────────────────────────────
 
@@ -41,6 +43,11 @@ public class AuthService {
 
         User saved = userRepository.save(user);
 
+        if (saved.getRole() == Role.CLIENT) {
+            String customerId = customerService.ensurePortalProfileForClient(saved.getName(), saved.getEmail());
+            messageService.ensureWelcomePortalConversation(customerId, saved.getName());
+        }
+
         String token = jwtUtil.generateToken(saved.getEmail(), String.valueOf(saved.getRole()));
         String refreshToken = jwtUtil.generateRefreshToken(saved.getEmail());
         return AuthResponse.of(token, refreshToken, saved.getId(), saved.getName(),
@@ -57,6 +64,11 @@ public class AuthService {
 
         if (!passwordEncoder.matches(req.password(), user.getPassword())) {
             throw new BadCredentialsException("Senha incorreta");
+        }
+
+        if (user.getRole() == Role.CLIENT) {
+            String customerId = customerService.ensurePortalProfileForClient(user.getName(), user.getEmail());
+            messageService.ensureWelcomePortalConversation(customerId, user.getName());
         }
 
         String token = jwtUtil.generateToken(user.getEmail(), String.valueOf(user.getRole()));

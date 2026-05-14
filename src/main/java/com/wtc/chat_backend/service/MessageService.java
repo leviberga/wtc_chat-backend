@@ -6,11 +6,13 @@ import com.wtc.chat_backend.model.dto.MessageResponse;
 import com.wtc.chat_backend.model.Conversation;
 import com.wtc.chat_backend.model.Message;
 import com.wtc.chat_backend.model.enums.ConversationStatus;
+import com.wtc.chat_backend.model.enums.MessageType;
 import com.wtc.chat_backend.model.enums.MessageStatus;
 import com.wtc.chat_backend.repository.ConversationRepository;
 import com.wtc.chat_backend.repository.CustomerRepository;
 import com.wtc.chat_backend.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -104,14 +106,46 @@ public class MessageService {
         return MessageResponse.from(messageRepository.save(message));
     }
 
+    /**
+     * Identificador da "conta" automática que envia boas-vindas no portal do cliente.
+     */
+    public static final String PORTAL_WELCOME_OPERATOR_ID = "portal-boas-vindas@wtc.chat";
+
+    /**
+     * Garante uma conversa inicial com mensagem de boas-vindas (para o cliente já poder responder).
+     * Idempotente.
+     */
+    public void ensureWelcomePortalConversation(String customerId, String customerDisplayName) {
+        if (conversationRepository
+                .findByCustomerIdAndOperatorId(customerId, PORTAL_WELCOME_OPERATOR_ID)
+                .isPresent()) {
+            return;
+        }
+        Conversation conv = new Conversation();
+        conv.setCustomerId(customerId);
+        conv.setOperatorId(PORTAL_WELCOME_OPERATOR_ID);
+        conv.setConversationStatus(ConversationStatus.OPEN);
+        conv.setUpdatedAt(LocalDateTime.now());
+        Conversation savedConv = conversationRepository.save(conv);
+
+        Message message = new Message();
+        message.setConversationId(savedConv.getId());
+        message.setSenderId(PORTAL_WELCOME_OPERATOR_ID);
+        String first = (customerDisplayName != null && !customerDisplayName.isBlank())
+                ? customerDisplayName.trim()
+                : "Cliente";
+        message.setContent("Olá, " + first + "! Bem-vindo ao WTC. Você já pode enviar mensagens para nossa equipe por aqui.");
+        message.setMessageType(MessageType.TEXT);
+        message.setMessageStatus(MessageStatus.SENT);
+        message.setCreatedAt(LocalDateTime.now());
+        messageRepository.save(message);
+    }
+
     // ─── HELPERS PRIVADOS ────────────────────────────────────────────────────
 
     private MessageResponse sendToCustomer(String customerId, String senderId, MessageRequest req) {
 
-        // Busca conversa existente ou cria uma nova
-        Conversation conversation = conversationRepository
-                .findByCustomerIdAndOperatorId(customerId, senderId)
-                .orElseGet(() -> createConversation(customerId, senderId));
+        Conversation conversation = resolveConversation(customerId, senderId);
 
         // Atualiza timestamp da conversa
         conversation.setUpdatedAt(LocalDateTime.now());
@@ -143,5 +177,30 @@ public class MessageService {
         return SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
+    }
+
+    private boolean isOperator() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch("ROLE_OPERATOR"::equals);
+    }
+
+    /**
+     * Operador: conversa 1:1 por (customerId, operatorEmail).
+     * Cliente: responde na conversa já aberta pelo operador/campanha (mesmo customerId).
+     */
+    private Conversation resolveConversation(String customerId, String senderId) {
+        if (isOperator()) {
+            return conversationRepository
+                    .findByCustomerIdAndOperatorId(customerId, senderId)
+                    .orElseGet(() -> createConversation(customerId, senderId));
+        }
+
+        return conversationRepository
+                .findByCustomerIdOrderByUpdatedAtDesc(customerId)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Não há conversa ativa. Aguarde o primeiro contato do atendimento."));
     }
 }

@@ -4,6 +4,7 @@ import com.wtc.chat_backend.model.dto.CustomerRequest;
 import com.wtc.chat_backend.model.dto.CustomerResponse;
 import com.wtc.chat_backend.model.dto.TimelineResponse;
 import com.wtc.chat_backend.model.Customer;
+import com.wtc.chat_backend.model.enums.CustomerStatus;
 import com.wtc.chat_backend.repository.ConversationRepository;
 import com.wtc.chat_backend.repository.CustomerRepository;
 import com.wtc.chat_backend.repository.MessageRepository;
@@ -44,6 +45,29 @@ public class CustomerService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    /**
+     * Garante um {@link Customer} para o app na visão cliente (mesmo e-mail do login).
+     * Se o operador já cadastrou esse e-mail no CRM, reutiliza o registro existente.
+     *
+     * @return id Mongo do cliente
+     */
+    public String ensurePortalProfileForClient(String name, String email) {
+        return customerRepository.findByEmail(email)
+                .map(Customer::getId)
+                .orElseGet(() -> {
+                    Customer c = new Customer();
+                    c.setName(name);
+                    c.setEmail(email);
+                    c.setPhone(null);
+                    c.setSegmentId(null);
+                    c.setTags(Collections.emptyList());
+                    c.setScore(0.0);
+                    c.setCustomerStatus(CustomerStatus.ACTIVE);
+                    c.setNotes(null);
+                    return customerRepository.save(c).getId();
+                });
     }
 
     // ─── BUSCAR POR ID ───────────────────────────────────────────────────────
@@ -123,6 +147,7 @@ public class CustomerService {
         customer.setTags(req.tags());
         customer.setScore(req.score());
         customer.setCustomerStatus(req.customerStatus());
+        customer.setNotes(req.notes());
     }
 
     private CustomerResponse toResponse(Customer customer) {

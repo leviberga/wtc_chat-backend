@@ -22,6 +22,10 @@ public class Customer {
     private List<String> tags;
     private Double score;
     private CustomerStatus customerStatus;
+
+    /** Observações rápidas do CRM (anotações por cliente) */
+    private String notes;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
 

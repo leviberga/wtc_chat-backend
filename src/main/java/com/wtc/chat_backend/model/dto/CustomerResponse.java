@@ -16,6 +16,7 @@ public record CustomerResponse(
         List<String> tags,
         Double score,
         CustomerStatus customerStatus,
+        String notes,
         LocalDateTime createdAt
 ) {
     public static CustomerResponse from(Customer c, String segmentName) {
@@ -29,6 +30,7 @@ public record CustomerResponse(
                 c.getTags(),
                 c.getScore(),
                 c.getCustomerStatus(),
+                c.getNotes(),
                 c.getCreatedAt()
         );
     }

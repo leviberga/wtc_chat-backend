@@ -19,5 +19,7 @@ public record CustomerRequest(
         String segmentId,
         List<String> tags,
         Double score,
-        CustomerStatus customerStatus
+        CustomerStatus customerStatus,
+
+        String notes
 ) {}
