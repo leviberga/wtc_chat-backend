@@ -196,10 +196,11 @@ public class MessageService {
                     .orElseGet(() -> createConversation(customerId, senderId));
         }
 
-        return conversationRepository
-                .findByCustomerIdOrderByUpdatedAtDesc(customerId)
-                .stream()
+        List<Conversation> all = conversationRepository.findByCustomerIdOrderByUpdatedAtDesc(customerId);
+        return all.stream()
+                .filter(conv -> !PORTAL_WELCOME_OPERATOR_ID.equals(conv.getOperatorId()))
                 .findFirst()
+                .or(() -> all.stream().findFirst())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Não há conversa ativa. Aguarde o primeiro contato do atendimento."));
     }

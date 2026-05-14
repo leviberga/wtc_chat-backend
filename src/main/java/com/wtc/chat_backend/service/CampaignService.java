@@ -142,7 +142,8 @@ public class CampaignService {
                 Message message = new Message();
                 message.setConversationId(conversation.getId());
                 message.setSenderId(senderId);
-                message.setContent(campaign.getContent());
+                message.setContent("[" + (campaign.getTitle() != null ? campaign.getTitle() : "Campanha")
+                        + "]\n" + campaign.getContent());
                 message.setMessageType(MessageType.TEXT);
                 message.setDeeplinkUrl(campaign.getDeeplinkUrl());
                 message.setMessageStatus(MessageStatus.SENT);
